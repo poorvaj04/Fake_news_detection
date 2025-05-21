@@ -8,6 +8,12 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
+import nltk
+
+# Download NLTK resources if not already present
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
 
 # Load punkt tokenizer
 punkt_path = r"D:\\naan_mudhalvan\\app\\tokenizers\\punkt\\english.pickle"
