@@ -16,13 +16,13 @@ nltk.download('stopwords')
 nltk.download('wordnet')
 
 # Load punkt tokenizer
-punkt_path = r"D:\\naan_mudhalvan\\app\\tokenizers\\punkt\\english.pickle"
+punkt_path = "english.pickle"
 with open(punkt_path, 'rb') as f:
     sentence_tokenizer = pickle.load(f)
 
 # Load TF-IDF vectorizer and model (Assuming you save them beforehand)
-model = joblib.load(r"D:\\naan_mudhalvan\\app\\logistic_model.pkl")
-tfidf_vectorizer = joblib.load(r"D:\\naan_mudhalvan\\app\\tfidf_vectorizer.pkl")
+model = joblib.load("logistic_model.pkl")
+tfidf_vectorizer = joblib.load("tfidf_vectorizer.pkl")
 
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
