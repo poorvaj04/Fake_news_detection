@@ -1,2 +1,5 @@
-Link for Dataset:
+# **Fake News Detector Using NLP**
+
+## **Datasets**
+Link for the Dataset:
 [Datasets](https://drive.google.com/drive/folders/1Ej0n0Me6-Sa6ZPDQqK7ZaSyojbw_Wt1O?usp=drive_link)
