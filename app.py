@@ -6,6 +6,23 @@ import numpy as np
 import pickle
 import os
 import base64
+import gdown
+import zipfile
+
+def download_and_extract_model():
+    if not os.path.exists("model"):
+        file_id = "1vQkKsrnKFwE7VNzKYfDrOaOtWNr1CL5C"  # 🔁 Replace with your actual file ID
+        url = f"https://drive.google.com/uc?id={file_id}"
+        output = "model.zip"
+
+        gdown.download(url, output, quiet=False)
+
+        with zipfile.ZipFile(output, "r") as zip_ref:
+            zip_ref.extractall(".")  # Extracts 'model/' folder
+
+        os.remove(output)
+
+download_and_extract_model()
 
 # Page config
 st.set_page_config(
