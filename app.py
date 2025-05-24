@@ -158,7 +158,7 @@ textarea {
 # Title
 st.markdown('<div class="title">🧠 Fake News Detection System</div>', unsafe_allow_html=True)
 st.markdown('<div class="textbox-label"><h4>💬 Enter a news article below to check if it\'s Real or Fake</h4></div>', unsafe_allow_html=True)
-st.markdown('<div class="textbox-label"> <h4>✍️ Type or paste the news article here:</h4></div>', unsafe_allow_html=True)
+st.markdown('<div class="textbox-label"> <h4>✍️ Type or paste the news article here(Dataset):</h4></div>', unsafe_allow_html=True)
 
 # Load files
 @st.cache_resource
