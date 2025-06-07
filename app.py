@@ -203,7 +203,7 @@ def predict_news(text):
         outputs = model(**inputs)
         probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
     label = torch.argmax(probs).item()
-    return "❌ Fake News" if label == 1 else "✅ Real News"
+    return "✅ Real News" if label == 1 else "❌ Fake News"
 
 # Input
 with st.container():
