@@ -20,18 +20,30 @@ def download_and_extract_model():
 
         with zipfile.ZipFile(output, "r") as zip_ref:
             zip_ref.extractall(".")
-
         os.remove(output)
 
 download_and_extract_model()
 
-# --- Page config ---
+# --- Load Models ---
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+tokenizer = BertTokenizer.from_pretrained("model/bert-base-uncased")
+model = BertForSequenceClassification.from_pretrained("model").to(device)
+sbert_model = SentenceTransformer("all-MiniLM-L6-v2").to(device)
+
+# Load embeddings and dictionary
+with open("model/real_embeddings.pkl", "rb") as f:
+    real_embeddings = pickle.load(f)
+with open("model/fake_embeddings.pkl", "rb") as f:
+    fake_embeddings = pickle.load(f)
+with open("model/exact_match_dict.pkl", "rb") as f:
+    exact_match_dict = pickle.load(f)
+# --- Streamlit Page Config ---
 st.set_page_config(
     page_title="📰 Fake News Detector",
     layout="centered",
 )
 
-# --- Background image ---
+# --- Set Background ---
 def set_background(image_file):
     with open(image_file, "rb") as img_file:
         encoded = base64.b64encode(img_file.read()).decode()
@@ -131,11 +143,10 @@ st.markdown(
 # --- Title ---
 st.markdown('<div class="title">🧠 Fake News Detection System</div>', unsafe_allow_html=True)
 st.markdown('<div class="textbox-label"><h4>💬 Enter a news article below to check if it\'s Real or Fake</h4></div>', unsafe_allow_html=True)
-st.markdown('<div class="textbox-label"> <h4>✍️ Type or paste the news article here(Dataset):</h4></div>', unsafe_allow_html=True)
-# File paths for persistent storage
+st.markdown('<div class="textbox-label"> <h4>✍️ Type or paste the news article here (Dataset):</h4></div>', unsafe_allow_html=True)
+# --- Persistent Real News Store ---
 REAL_NEWS_STORE = "stored_real_news.pkl"
 
-# Load or initialize real news storage
 def load_stored_real_news():
     if os.path.exists(REAL_NEWS_STORE):
         with open(REAL_NEWS_STORE, "rb") as f:
@@ -148,29 +159,28 @@ def save_stored_real_news(news_list):
 
 stored_real_news = load_stored_real_news()
 
-# Update predict_news to include real-news tracking
+# --- Prediction with Scores ---
 def predict_news(text):
     text = text.strip()
 
-    # 1. Exact match check
-    if text in exact_match_dict:
-        return "✅ Real", True
+    # Exact match check
+    exact_match_score = 1.0 if text in exact_match_dict else 0.0
+    if exact_match_score == 1.0:
+        return "✅ Real", exact_match_score, None, None, None
 
-    # 2. Compare with stored real news to detect fake modification
     input_embedding = sbert_model.encode(text, convert_to_tensor=True).to(device)
-    is_fake_due_to_change = False
 
+    # Semantic similarity with stored real news
+    max_sim_to_real_stored = 0
     for real_news in stored_real_news:
         real_embedding = sbert_model.encode(real_news, convert_to_tensor=True).to(device)
         sim = util.cos_sim(input_embedding, real_embedding).item()
-        if sim >= 0.8:
-            is_fake_due_to_change = True
-            break
+        max_sim_to_real_stored = max(max_sim_to_real_stored, sim)
 
-    if is_fake_due_to_change:
-        return "❌ Fake (Modified from Real)", False
+    if max_sim_to_real_stored >= 0.8:
+        return "❌ Fake (Modified from Real)", 0.0, max_sim_to_real_stored, None, None
 
-    # 3. Semantic similarity with original real/fake dataset
+    # Semantic similarity with real/fake datasets
     real_tensor = torch.tensor(real_embeddings).to(device)
     fake_tensor = torch.tensor(fake_embeddings).to(device)
 
@@ -183,11 +193,11 @@ def predict_news(text):
             if text not in stored_real_news:
                 stored_real_news.append(text)
                 save_stored_real_news(stored_real_news)
-            return "✅ Real News", True
+            return "✅ Real News", 0.0, max_sim_to_real_stored, real_sim, fake_sim
         else:
-            return "❌ Fake News", False
+            return "❌ Fake News", 0.0, max_sim_to_real_stored, real_sim, fake_sim
 
-    # 4. Classifier fallback
+    # Classifier fallback
     inputs = tokenizer(text, return_tensors='pt', truncation=True, padding=True, max_length=512).to(device)
     with torch.no_grad():
         outputs = model(**inputs)
@@ -198,40 +208,44 @@ def predict_news(text):
         if text not in stored_real_news:
             stored_real_news.append(text)
             save_stored_real_news(stored_real_news)
-        return "✅ Real News", True
+        return "✅ Real News", 0.0, max_sim_to_real_stored, real_sim, fake_sim
     else:
-        return "❌ Fake News", False
-
-# Input
+        return "❌ Fake News", 0.0, max_sim_to_real_stored, real_sim, fake_sim
+# --- User Input ---
 with st.container():
-    user_input = st.text_area("", height=200, key="textbox", help="Enter the news to check fake or real", placeholder=" Please Enter The Input Here...")
+    user_input = st.text_area(
+        "",
+        height=200,
+        key="textbox",
+        help="Enter the news to check if it's fake or real",
+        placeholder="Please enter the news article here..."
+    )
 
-# Predict
+# --- Predict Button ---
 if st.button("🔍 Predict"):
     if user_input.strip() == "":
-        output_color = "#ffb02e"
-        output_icon = "⚠️"
         st.markdown(f"""
             <div style="
                 margin-top: 30px;
                 padding: 1.2rem;
                 border-radius: 12px;
                 background-color: rgba(0, 0, 0, 0.8);
-                border: 3px solid {output_color};
+                border: 3px solid #ffb02e;
                 box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
                 text-align: center;
             ">
-            <span style="font-size: 28px; font-weight: bold; color: {output_color};">
-                {output_icon} Please enter some text to predict.
+            <span style="font-size: 28px; font-weight: bold; color: #ffb02e;">
+                ⚠️ Please enter some text to predict.
             </span>
         </div>
         """, unsafe_allow_html=True)
-
     else:
-        with st.spinner("Analyzing..."):
-            prediction, is_real = predict_news(user_input)
+        with st.spinner("🔎 Analyzing..."):
+            prediction, exact_score, sim_stored_real, real_score, fake_score = predict_news(user_input)
+            is_real = prediction.startswith("✅")
             output_color = "#00cc66" if is_real else "#ff4d4d"
             output_icon = "✅" if is_real else "❌"
+
             st.markdown(f"""
                 <div style="
                     margin-top: 30px;
@@ -247,3 +261,12 @@ if st.button("🔍 Predict"):
                 </span>
             </div>
             """, unsafe_allow_html=True)
+
+            # Show score breakdown
+            st.markdown("### 🔬 Score Breakdown")
+            st.write(f"**🔁 Exact Match Score:** `{exact_score:.2f}`")
+            if sim_stored_real is not None:
+                st.write(f"**🧠 Similarity to Stored Real News:** `{sim_stored_real:.2f}`")
+            if real_score is not None and fake_score is not None:
+                st.write(f"**📈 Max Similarity with Real Dataset:** `{real_score:.2f}`")
+                st.write(f"**📉 Max Similarity with Fake Dataset:** `{fake_score:.2f}`")
