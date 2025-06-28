@@ -1,8 +1,8 @@
 # **Fake News Detection System Using NLP**
 This project is an interactive and visually enhanced web application that helps to identify whether a given news article is Real or Fake(based on dataset). It provides accurate predictions and a user-friendly interface, powered by cutting-edge Natural Language Processing (NLP) models like BERT for classification and SBERT for semantic similarity.
 ## **Datasets**
-Link for the Dataset:
-[Datasets](https://drive.google.com/drive/folders/1Ej0n0Me6-Sa6ZPDQqK7ZaSyojbw_Wt1O?usp=drive_link)
+Link for the App.py:
+[WEB_APP](https://fakenewsdetection-nnq2kg4wb5vbmerwuvukos.streamlit.app/)
 ## **How It Works**
 1. The input text is first checked against a dictionary of known articles.
 
